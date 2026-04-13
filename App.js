@@ -1,84 +1,114 @@
+import { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { supabase } from './lib/supabase';
+
 import HomeScreen from './screens/HomeScreen';
 import PostScreen from './screens/PostScreen';
 import MeScreen from './screens/MeScreen';
+import AuthScreen from './screens/AuthScreen';
 
 const Tab = createBottomTabNavigator();
 
-export default function App() {
+function TabNavigator() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: '#fff',
-            borderTopColor: '#f0f0ed',
-            borderTopWidth: 0.5,
-            paddingBottom: 20,
-            paddingTop: 10,
-            height: 70,
-          },
-          tabBarActiveTintColor: '#222',
-          tabBarInactiveTintColor: '#ccc',
-          tabBarShowLabel: false,
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopColor: '#f0f0ed',
+          borderTopWidth: 0.5,
+          paddingBottom: 20,
+          paddingTop: 10,
+          height: 70,
+        },
+        tabBarActiveTintColor: '#222',
+        tabBarInactiveTintColor: '#ccc',
+        tabBarShowLabel: false,
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <View style={styles.iconGrid}>
+              <View style={[styles.iconDot, { backgroundColor: color }]} />
+              <View style={[styles.iconDot, { backgroundColor: color }]} />
+              <View style={[styles.iconDot, { backgroundColor: color }]} />
+              <View style={[styles.iconDot, { backgroundColor: color }]} />
+            </View>
+          ),
         }}
-      >
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <View style={styles.iconGrid}>
-                <View style={[styles.iconDot, { backgroundColor: color }]} />
-                <View style={[styles.iconDot, { backgroundColor: color }]} />
-                <View style={[styles.iconDot, { backgroundColor: color }]} />
-                <View style={[styles.iconDot, { backgroundColor: color }]} />
-              </View>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Post"
-          component={PostScreen}
-          options={{
-            tabBarIcon: () => (
-              <View style={styles.postBtn}>
-                <Text style={styles.postBtnText}>+</Text>
-              </View>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Me"
-          component={MeScreen}
-          options={{
-            tabBarIcon: ({ color }) => (
-              <View style={styles.personIcon}>
-                <View style={[styles.personHead, { backgroundColor: color }]} />
-                <View style={[styles.personBody, { backgroundColor: color }]} />
-              </View>
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
+      />
+      <Tab.Screen
+        name="Post"
+        component={PostScreen}
+        options={{
+          tabBarIcon: () => (
+            <View style={styles.postBtn}>
+              <Text style={styles.postBtnText}>+</Text>
+            </View>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Me"
+        component={MeScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <View style={styles.personIcon}>
+              <View style={[styles.personHead, { backgroundColor: color }]} />
+              <View style={[styles.personBody, { backgroundColor: color }]} />
+            </View>
+          ),
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+export default function App() {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color="#222" />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      <NavigationContainer>
+        {session ? <TabNavigator /> : <AuthScreen />}
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  loadingScreen: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  text: {
-    fontSize: 16,
-    color: '#222',
-    fontWeight: '500',
   },
   iconGrid: {
     width: 18,
